@@ -1,6 +1,8 @@
 """Collect: one function per method, shared by every source. Raw items go to Parquet on R2, parsing is dbt's job."""
 import csv, datetime, json, os, subprocess, sys, urllib.request
 
+from salary import parse
+
 BUCKET = os.environ.get("R2_BUCKET", "jobradar-data")
 CAP_GB = 9.5
 
@@ -109,7 +111,7 @@ def check():
         for method in src["methods"].split():
             try:
                 rows = pull(src, method, 1)
-                pct = sum(any(w in r[4].lower() for w in ("salar", "salaire", "gehalt", "lohn", "chf", "eur")) for r in rows) * 100 // max(len(rows), 1)
+                pct = sum(bool((p := parse(r[4])) and not p["excluded"]) for r in rows) * 100 // max(len(rows), 1)
                 print(f"| {src['source']} | {method} | OK | {len(rows)} | {pct}% |")
                 ok = ok or bool(rows)
             except Exception as e:
