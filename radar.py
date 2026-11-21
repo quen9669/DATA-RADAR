@@ -51,6 +51,7 @@ def pull(src, method, pages):
     rows, first = [], int(src["first"])
     for page in range(first, first + pages):
         items, envelope = split(src, method, METHODS[method](src, page))
+        print(src["source"], method, page, len(items), flush=True)
         rows += [(src["source"], method, page, i, body, envelope if n == 0 else None) for n, (i, body) in enumerate(items)]
         if len(items) < int(src["size"]) or method != "api":
             break
