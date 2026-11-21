@@ -21,6 +21,7 @@ CASES = [  # text, annual_min, annual_max, currency, excluded
     ("Rémunération : 2295 CHF brut par mois, 25 heures par semaine", 44064, 44064, "CHF", None),
     ("Provision auf jeden Abschluss: 3'000 bis 6'000 € im Monat", None, None, "EUR", "variable"),
     ("Salaire entre 55.000 et 85.000 EUR brut", 55000, 85000, "EUR", None),
+    ("Gehalt: ab CHF4’200.00 pro Monat", None, None, "CHF", "floor_only"),
 ]
 
 

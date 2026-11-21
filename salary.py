@@ -3,11 +3,11 @@ import csv, pathlib, re
 
 SEEDS = pathlib.Path(__file__).parent / "dbt" / "seeds"
 CUR = r"(chf|sfr|fr\.|€|eur(?:os?)?\b|\$|usd|£|gbp)"
-NUM = r"(\d+[.,]\d{4}(?!\d)|\d{1,3}(?:[ '’.,\u202f\u00a0]\d{3})+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*(k\b)?"
+NUM = r"(\d+[.,]\d{4}(?!\d)|\d{1,3}(?:[ '’.,\u202f\u00a0]\d{3})+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)(?:\.[-–]{1,2})?\s*(k\b)?"
 SEP = r"(?:-|–|—|à|to|bis|et|und|and)"
 AMOUNT = re.compile(rf"(?:{CUR}\s*)?{NUM}\s*{CUR}?(?:\s*{SEP}\s*(?:{CUR}\s*)?{NUM}\s*{CUR}?)?", re.I)
 KEY = re.compile(r"salaire|salary|r[ée]mun[ée]ration|gehalt|lohn|verg[üu]tung|brut|gross|package|compensation|pay\b|payment")
-PERIODS = [("hour", r"/\s*h\b|heure|per hour|hourly|stunde"), ("day", r"/\s*j\b|jour|per day|daily|tag\b|tagessatz"),
+PERIODS = [("hour", r"/\s*h\b|heure|per hour|hourly|stunde"), ("day", r"/\s*j\b|jour|per day|daily|\btag\b|tagessatz"),
            ("month", r"mois|month|monat|mensuel"), ("year", r"/\s*an|\ban\b|année|year|annuel|annual|jahr|p\.a\.|per annum|/\s*a\b")]
 CODES = {"€": "EUR", "eur": "EUR", "euro": "EUR", "euros": "EUR", "$": "USD", "usd": "USD", "£": "GBP", "gbp": "GBP"}
 
@@ -36,6 +36,8 @@ def first(periods, text):
 def variable(before):
     """True when a commission/bonus word precedes the amount with no salary word in between."""
     hits = list(re.finditer(r"provision|commission|\bote\b|bonus|prämie|prime", before))
+    if re.search(r"\bote\b|on.target", before):
+        return True
     return bool(hits) and not KEY.search(before[hits[-1].end():]) and not re.search(r"exclud|hors |ohne|sans ", before)
 
 
@@ -54,7 +56,7 @@ def parse(text, hours=40.0):
             break
     else:
         return None
-    if hi and k2 and not k1 and lo < 1000:
+    if hi and lo < 1000 <= hi:  # "95-105k", "80-100,000"
         lo *= 1000
     cur = CODES.get(cur, "CHF" if cur in ("chf", "sfr", "fr.") else cur.upper())
     w = t[max(0, m.start() - 80):m.end() + 120]
@@ -64,7 +66,7 @@ def parse(text, hours=40.0):
         period = "year"
     out = dict(min=lo, max=hi or lo, currency=cur, period=period, context=text[max(0, m.start() - 120):m.end() + 80],
                annual_min=None, annual_max=None, excluded=None)
-    if re.search(r"\bnet\b|netto", w[:140]):
+    if re.search(r"(?<![.\w])net\b|netto", w[:140]):
         out["excluded"] = "net"
     elif period == "day" or re.search(r"tjm|freelance|taux journalier|tagessatz|daily rate", w):
         out["excluded"] = "freelance"
@@ -72,6 +74,8 @@ def parse(text, hours=40.0):
         out["excluded"] = "variable"
     elif not hi and re.search(r"jusqu.à|up to|maximum|\bmax\b|bis zu|atteindre", t[max(0, m.start() - 40):m.start()]):
         out["excluded"] = "cap_only"
+    elif not hi and re.search(r"\bab\b|à partir d|\bdès\b|starting from|\bfrom\b|minimum|mind\.|mindestens|au moins|at least", t[max(0, m.start() - 40):m.start()]):
+        out["excluded"] = "floor_only"
     elif not period:
         out["excluded"] = "unknown_period"
     else:
