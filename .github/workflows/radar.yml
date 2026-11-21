@@ -56,3 +56,5 @@ jobs:
         run: |
           dbt build --profiles-dir .
           for m in source_ranking health salary_check; do dbt show --profiles-dir . -s $m --limit 30 | tee -a "$GITHUB_STEP_SUMMARY"; done
+      - working-directory: dbt
+        run: python -c "import duckdb; print('SAMPLE', duckdb.connect('radar.duckdb', read_only=True).sql('select offer_id, source_id, context from salary_sample order by 1').df().to_json(orient='records'))"
