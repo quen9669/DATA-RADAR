@@ -103,4 +103,4 @@ jobs:
       - working-directory: dbt
         run: |
           dbt build --profiles-dir .
-          for m in source_ranking health salary_check check_cases; do dbt show --profiles-dir . -s $m --limit 40 | tee -a "$GITHUB_STEP_SUMMARY"; done
+          for m in source_ranking health salary_check check_cases; do dbt show --profiles-dir . -s $m --limit 40 $( [ $m = check_cases ] && echo --output json) | tee -a "$GITHUB_STEP_SUMMARY"; done
