@@ -1,0 +1,23 @@
+name: probe
+on:
+  workflow_dispatch:
+    inputs:
+      reqs:
+        description: JSON list of [method, url, body|null]
+        required: true
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      REQS: ${{ inputs.reqs }}
+    steps:
+      - shell: python
+        run: |
+          import json, os, urllib.request
+          for m, u, b in json.loads(os.environ["REQS"]):
+              r = urllib.request.Request(u, json.dumps(b).encode() if b else None, {"Content-Type": "application/json", "Accept": "application/json, text/html", "User-Agent": "Mozilla/5.0"}, method=m)
+              try:
+                  with urllib.request.urlopen(r, timeout=30) as x:
+                      t = x.read().decode("utf8", "replace"); print("==", m, u, x.status, x.headers.get("content-type"), x.headers.get("x-total-count"), len(t)); print(t[:2500])
+              except Exception as e:
+                  print("==", m, u, "ERR", e, getattr(e, "read", lambda: b"")()[:300])
