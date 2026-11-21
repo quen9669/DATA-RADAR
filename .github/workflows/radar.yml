@@ -2,8 +2,18 @@ name: radar
 on:
   push:
   pull_request:
+  schedule:
+    - cron: "0 4 * * *"
+    - cron: "0 6 * * 1"
+    - cron: "0 3 2 * *"
   workflow_dispatch:
     inputs:
+      task:
+        description: collect, check or compact (default collect)
+        required: false
+      source:
+        description: one source of sources.csv (collect only)
+        required: false
       sql:
         description: DuckDB SQL run against the R2 bucket (query job)
         required: false
@@ -12,6 +22,15 @@ on:
         required: false
 permissions:
   contents: read
+env:
+  R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+  R2_KEY_ID: ${{ secrets.R2_KEY_ID }}
+  R2_SECRET: ${{ secrets.R2_SECRET }}
+  R2_BUCKET: ${{ vars.R2_BUCKET }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.R2_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET }}
+  AWS_DEFAULT_REGION: auto
+  FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
 jobs:
   lines:
     runs-on: ubuntu-latest
@@ -30,14 +49,46 @@ jobs:
       - run: |
           python3 -c "import sqlite3; c = sqlite3.connect('f.db'); c.execute('CREATE TABLE jobs (id, salary)'); c.executemany('INSERT INTO jobs VALUES (?, ?)', [(1, 5000), (2, 'n/a')]); c.commit()"
           mkdir out && LEGACY=sqlite:f.db SCHEMAS=main DEST=out duckdb -bail < export_legacy.sql
+  collect:
+    if: github.event.schedule == '0 4 * * *' || (github.event_name == 'workflow_dispatch' && inputs.sql == '' && inputs.reqs == '' && inputs.task == '' || inputs.task == 'collect')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install duckdb==1.4.1
+      - run: python radar.py ${{ inputs.source }} | tee -a "$GITHUB_STEP_SUMMARY"
+        shell: bash
+  check:
+    if: github.event.schedule == '0 6 * * 1' || inputs.task == 'check'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install duckdb==1.4.1
+      - run: python radar.py check | tee -a "$GITHUB_STEP_SUMMARY"
+        shell: bash
+  compact:
+    if: github.event.schedule == '0 3 2 * *' || inputs.task == 'compact'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install duckdb==1.4.1
+      - run: python radar.py compact
+  alert:
+    needs: [collect, check, compact, build]
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - run: |
+          title="Radar : échec d'un job"
+          gh issue list -R "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number -q '.[0].number' | grep -q . && exit 0
+          gh issue create -R "$GITHUB_REPOSITORY" --title "$title" --body "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
   query:
     if: github.event_name == 'workflow_dispatch' && inputs.sql != ''
     runs-on: ubuntu-latest
     env:
-      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_KEY_ID: ${{ secrets.R2_KEY_ID }}
-      R2_SECRET: ${{ secrets.R2_SECRET }}
-      R2_BUCKET: ${{ vars.R2_BUCKET }}
       SQL: ${{ inputs.sql }}
     steps:
       - run: pip install duckdb-cli==2.0.1
@@ -46,12 +97,9 @@ jobs:
           { echo "CREATE SECRET (TYPE r2, KEY_ID getenv('R2_KEY_ID'), SECRET getenv('R2_SECRET'), ACCOUNT_ID getenv('R2_ACCOUNT_ID'));"
             echo ".mode markdown"; echo "$SQL"; } | duckdb -bail | tee -a "$GITHUB_STEP_SUMMARY"
   build:
+    needs: collect
+    if: ${{ !cancelled() && inputs.sql == '' && inputs.reqs == '' && (inputs.task == '' || inputs.task == 'collect') }}
     runs-on: ubuntu-latest
-    env:
-      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_KEY_ID: ${{ secrets.R2_KEY_ID }}
-      R2_SECRET: ${{ secrets.R2_SECRET }}
-      R2_BUCKET: ${{ vars.R2_BUCKET }}
     steps:
       - uses: actions/checkout@v4
       - run: pip install dbt-duckdb==1.11.1 pandas
