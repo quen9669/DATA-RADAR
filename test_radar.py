@@ -46,6 +46,14 @@ class PullTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "job_room failed"):
                 radar.collect(JOB_ROOM, 1)
 
+    def test_follows_only_new_detail_links(self):
+        listing = '{"rawHtml": "<a href=\\"https://x.lu/offre/a-1.html\\"> <a href=\\"https://x.lu/offre/b-2.html\\">"}'
+        src = {**JOB_ROOM, "follow": r"https://x\.lu/offre/[^\"\\\\ <>]+\.html"}
+        with mock.patch.object(radar, "known", return_value={"https://x.lu/offre/a-1.html"}), \
+                mock.patch.dict(radar.METHODS, {"firecrawl": lambda s, page, url=None: f"page of {url}"}):
+            rows = radar.follow(src, "firecrawl", [("s", "firecrawl", 1, "u", listing, None)])
+        self.assertEqual([(r[3], r[4]) for r in rows], [("https://x.lu/offre/b-2.html", "page of https://x.lu/offre/b-2.html")])
+
 
 if __name__ == "__main__":
     unittest.main()

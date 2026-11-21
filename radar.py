@@ -1,5 +1,5 @@
 """Collect: one function per method, shared by every source. Raw items go to Parquet on R2, parsing is dbt's job."""
-import csv, datetime, json, os, subprocess, sys, urllib.request
+import csv, datetime, json, os, re, subprocess, sys, urllib.request
 
 from salary import parse
 
@@ -24,14 +24,14 @@ def fill(text, page):
     return text.replace("{page}", str(page))
 
 
-def api(src, page):
+def api(src, page, url=None):
     body = json.loads(fill(src["body"], page)) if src["body"] else None
     return http(fill(src["url"], page), body)
 
 
-def firecrawl(src, page):
+def firecrawl(src, page, url=None):
     key = {"Authorization": "Bearer " + os.environ["FIRECRAWL_API_KEY"]}
-    return http("https://api.firecrawl.dev/v1/scrape", {"url": fill(src["fallback_url"], page), "formats": ["rawHtml"]}, key)
+    return http("https://api.firecrawl.dev/v1/scrape", {"url": url or fill(src["fallback_url"], page), "formats": ["rawHtml"], "waitFor": 8000}, key)
 
 
 METHODS = {"api": api, "firecrawl": firecrawl}
@@ -47,6 +47,21 @@ def split(src, method, text):
     return [(str(at(i, src["id"])), json.dumps(i, ensure_ascii=False)) for i in items], envelope
 
 
+def follow(src, method, rows):
+    """Detail pages linked from a listing (src["follow"] is a regex), only those not stored yet."""
+    if not src.get("follow") or method == "api":
+        return []
+    urls = {u for r in rows for u in re.findall(src["follow"], r[4])} - known(src["source"])
+    return [(src["source"], method, 0, u, METHODS[method](src, 0, u), None) for u in sorted(urls)]
+
+
+def known(source):
+    try:
+        return {r[0] for r in connect().execute(f"SELECT DISTINCT item_id FROM read_parquet('r2://{BUCKET}/raw/source={source}/*/*.parquet')").fetchall()}
+    except Exception:
+        return set()
+
+
 def pull(src, method, pages):
     rows, first = [], int(src["first"])
     for page in range(first, first + pages):
@@ -55,7 +70,7 @@ def pull(src, method, pages):
         rows += [(src["source"], method, page, i, body, envelope if n == 0 else None) for n, (i, body) in enumerate(items)]
         if len(items) < int(src["size"]) or method != "api":
             break
-    return rows
+    return rows + follow(src, method, rows)
 
 
 def collect(src, pages):
