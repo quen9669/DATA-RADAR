@@ -120,8 +120,8 @@ jobs:
           for m, u, b in json.loads(os.environ["REQS"]):
               if m == "FC":
                   try:
-                      r = urllib.request.Request("https://api.firecrawl.dev/v1/scrape", json.dumps({"url": u, "formats": ["rawHtml"]}).encode(), {"Content-Type": "application/json", "Authorization": "Bearer " + os.environ["FIRECRAWL_API_KEY"]})
-                      t = urllib.request.urlopen(r, timeout=90).read().decode(); print("==", u, len(t)); print(t[:3000])
+                      r = urllib.request.Request("https://api.firecrawl.dev/v1/scrape", json.dumps({"url": u, "formats": ["rawHtml"], **(b or {})}).encode(), {"Content-Type": "application/json", "Authorization": "Bearer " + os.environ["FIRECRAWL_API_KEY"]})
+                      h = json.loads(urllib.request.urlopen(r, timeout=120).read())["data"]["rawHtml"]; t = re.sub(r"\s+", " ", re.sub(r"<script.*?</script>|<style.*?</style>|<[^>]+>", " ", h, flags=re.S)); print("==", u, len(h), len(t)); print(t[:2500]); print(sorted(set(re.findall(r"(?:href|data-[a-z-]+)=.([^\"' ]*(?:offre|offer|job)[^\"' ]*)", h)))[:40])
                   except Exception as e:
                       print("==", u, "ERR", e, getattr(e, "read", lambda: b"")()[:500])
                   continue
