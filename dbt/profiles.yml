@@ -1,0 +1,9 @@
+radar:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: radar.duckdb
+      extensions: [httpfs]
+      secrets:
+        - {type: r2, key_id: "{{ env_var('R2_KEY_ID', 'x') }}", secret: "{{ env_var('R2_SECRET', 'x') }}", account_id: "{{ env_var('R2_ACCOUNT_ID', 'x') }}"}

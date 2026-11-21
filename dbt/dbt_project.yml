@@ -1,0 +1,4 @@
+name: radar
+profile: radar
+vars:
+  legacy: "r2://{{ env_var('R2_BUCKET', 'jobradar-data') }}/parquet"

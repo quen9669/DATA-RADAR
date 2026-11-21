@@ -41,3 +41,17 @@ jobs:
         run: |
           { echo "CREATE SECRET (TYPE r2, KEY_ID getenv('R2_KEY_ID'), SECRET getenv('R2_SECRET'), ACCOUNT_ID getenv('R2_ACCOUNT_ID'));"
             echo ".mode markdown"; echo "$SQL"; } | duckdb -bail | tee -a "$GITHUB_STEP_SUMMARY"
+  build:
+    runs-on: ubuntu-latest
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_KEY_ID: ${{ secrets.R2_KEY_ID }}
+      R2_SECRET: ${{ secrets.R2_SECRET }}
+      R2_BUCKET: ${{ vars.R2_BUCKET }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install dbt-duckdb==1.11.1
+      - working-directory: dbt
+        run: |
+          dbt build --profiles-dir .
+          for m in source_ranking health; do dbt show --profiles-dir . -s $m --limit 30 | tee -a "$GITHUB_STEP_SUMMARY"; done
