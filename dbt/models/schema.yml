@@ -1,0 +1,12 @@
+models:
+  - name: offers
+    columns:
+      - {name: offer_id, data_tests: [unique, not_null]}
+      - {name: status, data_tests: [{accepted_values: {arguments: {values: [active, close]}}}]}
+      - {name: salary_origin, data_tests: [{accepted_values: {arguments: {values: [employeur]}}}]}
+  - name: source_ranking
+    columns:
+      - {name: source_id, data_tests: [unique, not_null]}
+  - name: health
+    columns:
+      - {name: source_id, data_tests: [unique, not_null]}
