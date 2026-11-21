@@ -118,6 +118,13 @@ jobs:
           import json, os, urllib.request
           import re
           for m, u, b in json.loads(os.environ["REQS"]):
+              if m == "FC":
+                  try:
+                      r = urllib.request.Request("https://api.firecrawl.dev/v1/scrape", json.dumps({"url": u, "formats": ["rawHtml"]}).encode(), {"Content-Type": "application/json", "Authorization": "Bearer " + os.environ["FIRECRAWL_API_KEY"]})
+                      t = urllib.request.urlopen(r, timeout=90).read().decode(); print("==", u, len(t)); print(t[:3000])
+                  except Exception as e:
+                      print("==", u, "ERR", e, getattr(e, "read", lambda: b"")()[:500])
+                  continue
               if m == "GETH":
                   try:
                       x = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0", **b}), timeout=30); t = x.read().decode("utf8", "replace"); print("==", u, x.status, x.headers.get("content-type"), len(t)); print(t[:3000])
