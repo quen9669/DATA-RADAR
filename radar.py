@@ -151,7 +151,8 @@ def main(arg=None):
         except Exception as e:
             failed.append(str(e))
             print(e, file=sys.stderr)
-    sys.exit("\n".join(failed))
+    if failed:
+        sys.exit("\n".join(failed))
 
 
 def compact(month):
