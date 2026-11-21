@@ -48,7 +48,7 @@ def parse(text, hours=40.0):
         c1, a, k1, c2, c3, b, k2, c4 = m.groups()
         cur = next((c for c in (c1, c2, c3, c4) if c), None)
         after = t[m.end():m.end() + 30]
-        if cur and (KEY.search(t[max(0, m.start() - 60):m.start()]) or first(PERIODS, after)):
+        if cur and not re.search(r"ch[èe]que|repas|voucher|mahlzeit", t[max(0, m.start() - 40):m.end() + 20]) and (KEY.search(t[max(0, m.start() - 60):m.start()]) or first(PERIODS, after)):
             try:
                 lo, hi = num(a, k1), num(b, k2 or k1) if b else None
             except ValueError:  # e.g. "2.910.00": not an amount
@@ -61,9 +61,10 @@ def parse(text, hours=40.0):
     cur = CODES.get(cur, "CHF" if cur in ("chf", "sfr", "fr.") else cur.upper())
     w = t[max(0, m.start() - 80):m.end() + 120]
     bounds = seed("salary_bounds").get(cur)
-    period = first(PERIODS, after) or first(PERIODS, w)
+    period = first(PERIODS, after)
     if not period and bounds and lo >= float(bounds["infer_year_from"]):
         period = "year"
+    period = period or first(PERIODS, w)
     out = dict(min=lo, max=hi or lo, currency=cur, period=period, context=text[max(0, m.start() - 120):m.end() + 80],
                annual_min=None, annual_max=None, excluded=None)
     if re.search(r"(?<![.\w])net\b|netto", w[:140]):

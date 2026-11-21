@@ -22,6 +22,10 @@ CASES = [  # text, annual_min, annual_max, currency, excluded
     ("Provision auf jeden Abschluss: 3'000 bis 6'000 € im Monat", None, None, "EUR", "variable"),
     ("Salaire entre 55.000 et 85.000 EUR brut", 55000, 85000, "EUR", None),
     ("Gehalt: ab CHF4’200.00 pro Monat", None, None, "CHF", "floor_only"),
+    ("Des chèque-repas (13,5 € / jour travaillé). Salaire annuel brut 60000 €", 60000, 60000, "EUR", None),
+    ("2 jours par semaine au bureau. Un salaire entre CHF 85'000 et 95'000 pour un poste", 85000, 95000, "CHF", None),
+    ("Gross monthly salary between €6094 and €6678, paid over 13 months", 79222, 86814, "EUR", None),
+    ("Fixer Stundenlohn von 33.44 CHF Brutto bei einer 40 Stundenwoche", 69555, 69555, "CHF", None),
 ]
 
 

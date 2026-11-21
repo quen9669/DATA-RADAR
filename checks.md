@@ -39,6 +39,8 @@ Limites connues : aucune des trois sources n'a de champ salaire structuré (cas 
 | 4 | idem | — | — |
 | 5 | `adem:…/assistant-administratif-m-f-803754.html` et `…/agent-de-restauration-plonge-m-f-x-cdi-40h-semaine-803738.html` | aucun salaire ; retrait à vérifier plus tard | vide (OK), retrait non détecté |
 
+## Correctifs appliqués après ce tableau
+Les colonnes « Observé » ci-dessus datent du build avant correctif. Corrigés ensuite (avec 4 cas ajoutés aux tests) : montants en € (le modèle convertissait le montant de la période, pas l'annuel : 6 094 devient 79 222, 33,44 CHF/h devient 69 555 CHF, 1 108 CHF/mois à 13 h devient 40 911 CHF) ; « chèque-repas / jour » n'est plus lu comme salaire ; « 2 jours par semaine » ne force plus la période « jour » quand le montant est annuel. Le prochain build donnera les valeurs à comparer.
+
 ## À décider par FRANKS
 - Les cas 2, 3, 4 d'ADEM faute de données : accepter « 0 salaire sur ADEM » comme cas validé, ou attendre une offre avec salaire ?
-- Corriger `salary.py` pour les faux positifs « freelance », le 13e mois / temps partiel sur ces extraits et le taux horaire (nouvelles annotations + test, sans baisser le seuil de 95 %) : prévu comme correctif séparé, avant validation.
