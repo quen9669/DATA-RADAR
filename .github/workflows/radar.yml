@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install duckdb==1.4.1
+      - run: pip install duckdb==2.0.1
       - run: python radar.py ${{ inputs.source }} | tee -a "$GITHUB_STEP_SUMMARY"
         shell: bash
   check:
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install duckdb==1.4.1
+      - run: pip install duckdb==2.0.1
       - run: python radar.py check | tee -a "$GITHUB_STEP_SUMMARY"
         shell: bash
   compact:
@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install duckdb==1.4.1
+      - run: pip install duckdb==2.0.1
       - run: python radar.py compact
   alert:
     needs: [collect, check, compact, build]
