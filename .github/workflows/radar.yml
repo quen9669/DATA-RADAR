@@ -68,7 +68,11 @@ jobs:
       - shell: python
         run: |
           import json, os, urllib.request
+          import re
           for m, u, b in json.loads(os.environ["REQS"]):
+              if m == "GREP":
+                  t = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"}), timeout=30).read().decode("utf8", "replace")
+                  print("==", u, len(t)); print("\n".join(sorted(set(re.findall(b, t)))[:80])); continue
               r = urllib.request.Request(u, json.dumps(b).encode() if b else None, {"Content-Type": "application/json", "Accept": "application/json, text/html", "User-Agent": "Mozilla/5.0"}, method=m)
               try:
                   with urllib.request.urlopen(r, timeout=30) as x:
