@@ -1,0 +1,42 @@
+name: radar
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      sql:
+        description: DuckDB SQL run against the R2 bucket (query job)
+        required: false
+permissions:
+  contents: read
+jobs:
+  lines:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          n=$(git ls-files '*.py' '*.sql' '*.yml' '*.yaml' '*.toml' | xargs cat | wc -l)
+          echo "Lines: $n / 1000" >> "$GITHUB_STEP_SUMMARY"
+          test "$n" -le 1000
+  legacy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install duckdb-cli==2.0.1
+      - run: |
+          python3 -c "import sqlite3; c = sqlite3.connect('f.db'); c.execute('CREATE TABLE jobs (id, salary)'); c.executemany('INSERT INTO jobs VALUES (?, ?)', [(1, 5000), (2, 'n/a')]); c.commit()"
+          mkdir out && LEGACY=sqlite:f.db DEST=out duckdb -bail < export_legacy.sql
+  query:
+    if: github.event_name == 'workflow_dispatch' && inputs.sql != ''
+    runs-on: ubuntu-latest
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_KEY_ID: ${{ secrets.R2_KEY_ID }}
+      R2_SECRET: ${{ secrets.R2_SECRET }}
+      R2_BUCKET: ${{ vars.R2_BUCKET }}
+      SQL: ${{ inputs.sql }}
+    steps:
+      - run: pip install duckdb-cli==2.0.1
+      - run: |
+          { echo "CREATE SECRET (TYPE r2, KEY_ID getenv('R2_KEY_ID'), SECRET getenv('R2_SECRET'), ACCOUNT_ID getenv('R2_ACCOUNT_ID'));"
+            echo ".mode markdown"; echo "$SQL"; } | duckdb -bail | tee -a "$GITHUB_STEP_SUMMARY"
