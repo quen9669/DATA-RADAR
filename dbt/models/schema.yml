@@ -4,6 +4,10 @@ models:
       - {name: offer_id, data_tests: [unique, not_null]}
       - {name: status, data_tests: [{accepted_values: {arguments: {values: [active, close]}}}]}
       - {name: salary_origin, data_tests: [{accepted_values: {arguments: {values: [employeur]}}}]}
+  - name: salary_text
+    columns:
+      - {name: offer_id, data_tests: [not_null]}
+      - {name: excluded, data_tests: [{accepted_values: {arguments: {values: [net, freelance, variable, cap_only, floor_only, unknown_period, range_too_wide, out_of_bounds]}, config: {where: "excluded is not null"}}}]}
   - name: source_ranking
     columns:
       - {name: source_id, data_tests: [unique, not_null]}

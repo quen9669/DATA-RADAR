@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: python3 -m unittest
       - run: |
           n=$(git ls-files '*.py' '*.sql' '*.yml' '*.yaml' '*.toml' | xargs cat | wc -l)
           echo "Lines: $n / 1000" >> "$GITHUB_STEP_SUMMARY"
@@ -50,8 +51,8 @@ jobs:
       R2_BUCKET: ${{ vars.R2_BUCKET }}
     steps:
       - uses: actions/checkout@v4
-      - run: pip install dbt-duckdb==1.11.1
+      - run: pip install dbt-duckdb==1.11.1 pandas
       - working-directory: dbt
         run: |
           dbt build --profiles-dir .
-          for m in source_ranking health; do dbt show --profiles-dir . -s $m --limit 30 | tee -a "$GITHUB_STEP_SUMMARY"; done
+          for m in source_ranking health salary_check; do dbt show --profiles-dir . -s $m --limit 30 | tee -a "$GITHUB_STEP_SUMMARY"; done
