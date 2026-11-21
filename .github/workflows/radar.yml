@@ -17,9 +17,6 @@ on:
       sql:
         description: DuckDB SQL run against the R2 bucket (query job)
         required: false
-      reqs:
-        description: TEMP probe, JSON list of [method, url, body|null]
-        required: false
 permissions:
   contents: read
 env:
@@ -50,7 +47,7 @@ jobs:
           python3 -c "import sqlite3; c = sqlite3.connect('f.db'); c.execute('CREATE TABLE jobs (id, salary)'); c.executemany('INSERT INTO jobs VALUES (?, ?)', [(1, 5000), (2, 'n/a')]); c.commit()"
           mkdir out && LEGACY=sqlite:f.db SCHEMAS=main DEST=out duckdb -bail < export_legacy.sql
   collect:
-    if: github.event.schedule == '0 4 * * *' || (github.event_name == 'workflow_dispatch' && inputs.sql == '' && inputs.reqs == '' && inputs.task == '' || inputs.task == 'collect')
+    if: github.event.schedule == '0 4 * * *' || (github.event_name == 'workflow_dispatch' && inputs.sql == '' && inputs.task == '' || inputs.task == 'collect')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -98,7 +95,7 @@ jobs:
             echo ".mode markdown"; echo "$SQL"; } | duckdb -bail | tee -a "$GITHUB_STEP_SUMMARY"
   build:
     needs: collect
-    if: ${{ !cancelled() && inputs.sql == '' && inputs.reqs == '' && (inputs.task == '' || inputs.task == 'collect') }}
+    if: ${{ !cancelled() && inputs.sql == '' && (inputs.task == '' || inputs.task == 'collect') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -107,36 +104,3 @@ jobs:
         run: |
           dbt build --profiles-dir .
           for m in source_ranking health salary_check; do dbt show --profiles-dir . -s $m --limit 30 | tee -a "$GITHUB_STEP_SUMMARY"; done
-  probe:
-    if: github.event_name == 'workflow_dispatch' && inputs.reqs != ''
-    runs-on: ubuntu-latest
-    env:
-      REQS: ${{ inputs.reqs }}
-    steps:
-      - shell: python
-        run: |
-          import json, os, urllib.request
-          import re
-          for m, u, b in json.loads(os.environ["REQS"]):
-              if m == "FC":
-                  try:
-                      r = urllib.request.Request("https://api.firecrawl.dev/v1/scrape", json.dumps({"url": u, "formats": ["rawHtml"], **(b or {})}).encode(), {"Content-Type": "application/json", "Authorization": "Bearer " + os.environ["FIRECRAWL_API_KEY"]})
-                      h = json.loads(urllib.request.urlopen(r, timeout=120).read())["data"]["rawHtml"]; t = re.sub(r"\s+", " ", re.sub(r"<script.*?</script>|<style.*?</style>|<[^>]+>", " ", h, flags=re.S)); print("==", u, len(h), len(t)); print(t[:2500]); print(sorted(set(re.findall(r"(?:href|data-[a-z-]+)=.([^\"' ]*(?:offre|offer|job)[^\"' ]*)", h)))[:40])
-                  except Exception as e:
-                      print("==", u, "ERR", e, getattr(e, "read", lambda: b"")()[:500])
-                  continue
-              if m == "GETH":
-                  try:
-                      x = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0", **b}), timeout=30); t = x.read().decode("utf8", "replace"); print("==", u, x.status, x.headers.get("content-type"), len(t)); print(t[:3000])
-                  except Exception as e:
-                      print("==", u, "ERR", e, dict(getattr(e, "headers", {})), re.sub(r"\s+", " ", re.sub(r"<script.*?</script>|<style.*?</style>|<[^>]+>", " ", e.read().decode("utf8", "replace"), flags=re.S))[:1200])
-                  continue
-              if m == "GREP":
-                  t = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"}), timeout=30).read().decode("utf8", "replace")
-                  print("==", u, len(t)); print("\n".join(sorted(set(re.findall(b, t)))[:80])); continue
-              r = urllib.request.Request(u, json.dumps(b).encode() if b else None, {"Content-Type": "application/json", "Accept": "application/json, text/html", "User-Agent": "Mozilla/5.0"}, method=m)
-              try:
-                  with urllib.request.urlopen(r, timeout=30) as x:
-                      t = x.read().decode("utf8", "replace"); print("==", m, u, x.status, x.headers.get("content-type"), x.headers.get("x-total-count"), len(t)); print(t[:2500])
-              except Exception as e:
-                  print("==", m, u, "ERR", e, getattr(e, "read", lambda: b"")()[:300])

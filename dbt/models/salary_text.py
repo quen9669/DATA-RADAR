@@ -10,7 +10,7 @@ from salary import parse, to_eur  # noqa: E402
 def model(dbt, session):
     dbt.config(materialized="table")
     rows = []
-    for offer_id, source_id, description in dbt.ref("stg_descriptions").fetchall():
+    for offer_id, source_id, description in dbt.ref("stg_descriptions").fetchall() + dbt.ref("stg_posting_descriptions").fetchall():
         p = parse(description)
         if p:
             eur = {k: to_eur(p[k], p["currency"]) if p["annual_" + k[:3]] and p["currency"] in ("EUR", "CHF") else None
