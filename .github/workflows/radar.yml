@@ -74,7 +74,7 @@ jobs:
                   try:
                       x = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0", **b}), timeout=30); t = x.read().decode("utf8", "replace"); print("==", u, x.status, x.headers.get("content-type"), len(t)); print(t[:3000])
                   except Exception as e:
-                      print("==", u, "ERR", e)
+                      print("==", u, "ERR", e, dict(getattr(e, "headers", {})), re.sub(r"\s+", " ", re.sub(r"<script.*?</script>|<style.*?</style>|<[^>]+>", " ", e.read().decode("utf8", "replace"), flags=re.S))[:1200])
                   continue
               if m == "GREP":
                   t = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"}), timeout=30).read().decode("utf8", "replace")

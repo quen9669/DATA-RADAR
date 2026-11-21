@@ -1,6 +1,5 @@
 """Collect: one function per method, shared by every source. Raw items go to Parquet on R2, parsing is dbt's job."""
-import csv, datetime, json, os, subprocess, sys, tempfile, urllib.request
-import duckdb
+import csv, datetime, json, os, subprocess, sys, urllib.request
 
 BUCKET = os.environ.get("R2_BUCKET", "jobradar-data")
 CAP_GB = 9.5
@@ -39,7 +38,7 @@ METHODS = {"api": api, "firecrawl": firecrawl}
 def split(src, method, text):
     """(items, envelope): api pages hold a list of items, any other method keeps the page whole."""
     if method != "api":
-        return [(src["fallback_url"], text)], None
+        return [(src["fallback_url"], text)] * bool(text.strip()), None
     doc = json.loads(text)
     items = at(doc, src["items"])
     envelope = text if isinstance(doc, list) else json.dumps({**doc, src["items"]: []})
@@ -70,6 +69,7 @@ def collect(src, pages):
 
 
 def connect():
+    import duckdb
     con = duckdb.connect()
     con.execute("CREATE SECRET (TYPE r2, KEY_ID getenv('R2_KEY_ID'), SECRET getenv('R2_SECRET'), ACCOUNT_ID getenv('R2_ACCOUNT_ID'))")
     return con
