@@ -37,6 +37,7 @@ jobs:
       SQL: ${{ inputs.sql }}
     steps:
       - run: pip install duckdb-cli==2.0.1
-      - run: |
+      - shell: bash
+        run: |
           { echo "CREATE SECRET (TYPE r2, KEY_ID getenv('R2_KEY_ID'), SECRET getenv('R2_SECRET'), ACCOUNT_ID getenv('R2_ACCOUNT_ID'));"
             echo ".mode markdown"; echo "$SQL"; } | duckdb -bail | tee -a "$GITHUB_STEP_SUMMARY"
