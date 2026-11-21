@@ -74,7 +74,8 @@ def collect(src, pages):
 def connect():
     import duckdb
     con = duckdb.connect()
-    con.execute("CREATE SECRET (TYPE r2, KEY_ID getenv('R2_KEY_ID'), SECRET getenv('R2_SECRET'), ACCOUNT_ID getenv('R2_ACCOUNT_ID'))")
+    key, secret, account = (os.environ[k] for k in ("R2_KEY_ID", "R2_SECRET", "R2_ACCOUNT_ID"))
+    con.execute(f"CREATE SECRET (TYPE r2, KEY_ID '{key}', SECRET '{secret}', ACCOUNT_ID '{account}')")
     return con
 
 
