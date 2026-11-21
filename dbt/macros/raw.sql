@@ -2,7 +2,7 @@
 {% macro raw(source) %}
 {% set root = "r2://" ~ env_var("R2_BUCKET", "jobradar-data") %}
 {% set compacted = run_query("select count(*) from glob('" ~ root ~ "/compact/*/data.parquet')").columns[0][0] > 0 if execute else false %}
-select item_id, body, min(first_seen) over w as first_seen, max(last_seen) over w as last_seen
+(select item_id, body, min(first_seen) over w as first_seen, max(last_seen) over w as last_seen
 from (
     select item_id, body, fetched_at as first_seen, fetched_at as last_seen
     from read_parquet('{{ root }}/raw/source={{ source }}/*/*.parquet')
@@ -12,5 +12,5 @@ from (
     {% endif %}
 )
 window w as (partition by item_id)
-qualify row_number() over (partition by item_id order by last_seen desc) = 1
+qualify row_number() over (partition by item_id order by last_seen desc) = 1)
 {% endmacro %}
