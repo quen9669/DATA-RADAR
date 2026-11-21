@@ -1,9 +1,9 @@
-INSTALL sqlite; LOAD sqlite; SET sqlite_all_varchar = true;
+INSTALL postgres; INSTALL sqlite; LOAD postgres; LOAD sqlite;
 CREATE SECRET (TYPE r2, KEY_ID getenv('R2_KEY_ID'), SECRET getenv('R2_SECRET'), ACCOUNT_ID getenv('R2_ACCOUNT_ID'));
 SET VARIABLE src = getenv('LEGACY');
 ATTACH getvariable('src') AS legacy (READ_ONLY);
 CREATE TEMP TABLE parts AS SELECT schema_name s, table_name t, format('{}/{}.{}.parquet', getenv('DEST'), schema_name, table_name) f
-FROM duckdb_tables() WHERE database_name = 'legacy';
+FROM duckdb_tables() WHERE database_name = 'legacy' AND schema_name IN (SELECT unnest(string_split(getenv('SCHEMAS'), ',')));
 .mode list
 .headers off
 .output copy_legacy.sql

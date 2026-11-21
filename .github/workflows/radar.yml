@@ -25,7 +25,7 @@ jobs:
       - run: pip install duckdb-cli==2.0.1
       - run: |
           python3 -c "import sqlite3; c = sqlite3.connect('f.db'); c.execute('CREATE TABLE jobs (id, salary)'); c.executemany('INSERT INTO jobs VALUES (?, ?)', [(1, 5000), (2, 'n/a')]); c.commit()"
-          mkdir out && LEGACY=sqlite:f.db DEST=out duckdb -bail < export_legacy.sql
+          mkdir out && LEGACY=sqlite:f.db SCHEMAS=main DEST=out duckdb -bail < export_legacy.sql
   query:
     if: github.event_name == 'workflow_dispatch' && inputs.sql != ''
     runs-on: ubuntu-latest
