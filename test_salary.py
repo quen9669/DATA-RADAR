@@ -23,6 +23,9 @@ class SalaryTest(unittest.TestCase):
                 r = parse(text)
                 self.assertEqual((r["annual_min"], r["annual_max"], r["currency"], r["excluded"]), (lo, hi, cur, excluded))
 
+    def test_malformed_number(self):
+        self.assertIsNone(parse("Salaire 2.910.00 € par mois"))
+
     def test_no_salary(self):
         self.assertIsNone(parse("Salaire attractif selon profil"))
         self.assertIsNone(parse("Une équipe de 40 personnes, budget 5 M€"))

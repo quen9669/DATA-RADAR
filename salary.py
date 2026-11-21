@@ -32,11 +32,14 @@ def parse(text, hours=40.0):
         w = t[max(0, m.start() - 80):m.end() + 60]
         after = t[m.end():m.end() + 30]
         if cur and (KEY.search(t[max(0, m.start() - 60):m.start()]) or any(re.search(rx, after) for _, rx in PERIODS)):
+            try:
+                lo, hi = num(a, k1), num(b, k2 or k1) if b else None
+            except ValueError:  # e.g. "2.910.00": not an amount
+                continue
             break
     else:
         return None
     cur = CODES.get(cur, "CHF" if cur in ("chf", "sfr", "fr.") else cur.upper())
-    lo, hi = num(a, k1), num(b, k2 or k1) if b else None
     period = next((p for p, rx in PERIODS if re.search(rx, after)), None) or next((p for p, rx in PERIODS if re.search(rx, w)), None)
     out = dict(min=lo, max=hi or lo, currency=cur, period=period, context=text[max(0, m.start() - 120):m.end() + 80], annual_min=None, annual_max=None, excluded=None)
     if re.search(r"\bnet\b|netto", w):
