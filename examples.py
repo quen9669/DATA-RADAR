@@ -2,8 +2,10 @@ import json, os, sys
 import duckdb
 sys.path.insert(0, ".")
 import radar
-db = duckdb.connect("dbt/radar.duckdb", read_only=True)
 r2 = radar.connect()
+r2.execute("ATTACH 'dbt/radar.duckdb' AS radar (READ_ONLY)")
+r2.execute("USE radar")
+db = r2
 bucket = radar.BUCKET
 print("STATS", json.dumps(db.execute("""select p.source_id, count(*) n, count(title) titles, count(company) companies, count(description) descs,
     avg(length(description))::int avg_desc, count(distinct s.offer_id) with_salary from postings p left join salaries s using (offer_id) group by 1 order by 1""").fetchall(), default=str))
