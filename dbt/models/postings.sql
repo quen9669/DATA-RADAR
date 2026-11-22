@@ -8,3 +8,7 @@ union all by name
 select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_jobposting') }}
 union all by name
 select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_indeed_lu') }}
+union all by name
+select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_jobs_lu') }}
+union all by name
+select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_jobfinder') }}
