@@ -17,6 +17,10 @@ select
     s.annuel_brut_tp_eur_point as salary_eur_year,
     s.annuel_brut_tp_min as salary_min,
     s.annuel_brut_tp_max as salary_max,
+    coalesce(case when s.annuel_brut_tp_eur_point is not null then round(s.annuel_brut_tp_eur_point * coalesce(s.annuel_brut_tp_min, s.annuel_brut_tp_max)
+        / ((coalesce(s.annuel_brut_tp_min, s.annuel_brut_tp_max) + coalesce(s.annuel_brut_tp_max, s.annuel_brut_tp_min)) / 2)) end, s.annuel_brut_tp_eur_point) as salary_eur_min,
+    coalesce(case when s.annuel_brut_tp_eur_point is not null then round(s.annuel_brut_tp_eur_point * coalesce(s.annuel_brut_tp_max, s.annuel_brut_tp_min)
+        / ((coalesce(s.annuel_brut_tp_min, s.annuel_brut_tp_max) + coalesce(s.annuel_brut_tp_max, s.annuel_brut_tp_min)) / 2)) end, s.annuel_brut_tp_eur_point) as salary_eur_max,
     s.devise as salary_currency,
     s.salaire_origine as salary_origin,
     s.motif_exclusion as salary_excluded_reason,
