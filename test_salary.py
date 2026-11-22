@@ -26,6 +26,7 @@ CASES = [  # text, annual_min, annual_max, currency, excluded
     ("2 jours par semaine au bureau. Un salaire entre CHF 85'000 et 95'000 pour un poste", 85000, 95000, "CHF", None),
     ("Gross monthly salary between €6094 and €6678, paid over 13 months", 79222, 86814, "EUR", None),
     ("Fixer Stundenlohn von 33.44 CHF Brutto bei einer 40 Stundenwoche", 69555, 69555, "CHF", None),
+    ("Salaire : Entre 55k et 65k €. Développeur PHP", 55000, 65000, "EUR", None),
 ]
 
 

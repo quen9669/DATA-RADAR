@@ -59,10 +59,13 @@ METHODS = {"api": api, "page": page, "firecrawl": firecrawl, "jobspy": jobspy, "
 LISTS = ("api", "jobspy", "apify")  # methods whose answer is a list of items
 
 
+NOISE = re.compile(r"(?s)<svg\b.*?</svg>|<style\b.*?</style>|<script\b(?![^>]*(?:ld\+json|__NEXT_DATA__)).*?</script>")  # page code, not content
+
+
 def split(src, method, text, page=0):
     """(items, envelope): list methods hold many items, any other method keeps the page whole."""
     if method not in LISTS:
-        return [(fill(src["url"] if method == "page" else src["fallback_url"] or src["url"], page), text)] * bool(text.strip()), None
+        return [(fill(src["url"] if method == "page" else src["fallback_url"] or src["url"], page), NOISE.sub("", text))] * bool(text.strip()), None
     doc = json.loads(text)
     items = at(doc, src["items"])
     envelope = text if isinstance(doc, list) else json.dumps({**doc, src["items"]: []})

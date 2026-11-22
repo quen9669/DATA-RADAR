@@ -67,6 +67,11 @@ class PageTest(unittest.TestCase):
         with mock.patch.object(radar, "known", return_value=set()), mock.patch.dict(radar.METHODS, {"page": fetch}):
             return radar.pull(self.SRC, "page", 5, cap), fetched
 
+    def test_page_code_is_dropped_but_the_offer_data_is_kept(self):
+        html = '<svg><path d="M0"/></svg><style>a{}</style><script>track()</script><script type="application/ld+json">{"@type":"JobPosting"}</script><p>Offre</p>'
+        (_, kept), = radar.split(self.SRC, "page", html)[0]
+        self.assertEqual(kept, '<script type="application/ld+json">{"@type":"JobPosting"}</script><p>Offre</p>')
+
     def test_pages_stop_when_no_new_link_and_relative_links_are_made_absolute(self):
         rows, _ = self.run_pull(['<a href="/offre/a"> <a href="/offre/b">', '<a href="/offre/b">', '<a href="/offre/c">'])
         self.assertEqual([r[3] for r in rows], ["https://x.lu/jobs?page=1", "https://x.lu/jobs?page=2", "https://x.lu/offre/a", "https://x.lu/offre/b"])
