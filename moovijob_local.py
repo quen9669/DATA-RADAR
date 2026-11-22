@@ -4,12 +4,14 @@ from playwright.sync_api import sync_playwright
 
 from radar import NOISE
 
+PAUSE = 4  # seconds between two pages
 LINK = re.compile(r"https://www\.moovijob\.com/offres-emploi/(?!jobs-luxembourg)[^/\"'\\ <>#?]+/[^/\"'\\ <>#?]+")
 
 
 def read(page, url):
     page.goto(url, timeout=60000)
-    page.wait_for_function("!document.title.includes('Just a moment')", timeout=60000)
+    page.wait_for_function("!/Just a moment|Un instant/.test(document.title)", timeout=60000)  # Cloudflare check, in English or French
+    page.wait_for_timeout(PAUSE * 1000)  # slow on purpose: faster than this and Cloudflare keeps the check up
     return page.content()
 
 
