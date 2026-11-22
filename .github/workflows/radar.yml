@@ -116,5 +116,5 @@ jobs:
       - uses: actions/checkout@v4
       - run: pip install dbt-duckdb==1.11.1 pandas
       - working-directory: dbt
-        run: dbt run --profiles-dir . -s +postings +salaries
+        run: dbt seed --profiles-dir . && dbt run --profiles-dir . -s +postings +salaries
       - run: python examples.py
