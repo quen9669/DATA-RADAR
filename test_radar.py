@@ -83,6 +83,14 @@ class PageTest(unittest.TestCase):
         with mock.patch.object(radar, "known", return_value=set()), mock.patch.dict(radar.METHODS, {"page": fetch}):
             self.assertEqual([r[3] for r in radar.pull(self.SRC, "page", 1)][-1], "https://x.lu/offre/b")
 
+    def test_a_page_failing_after_the_first_keeps_the_pages_read(self):
+        def fetch(src, page, url=None):
+            if url is None and page == 2:
+                raise OSError("404")
+            return '<a href="/offre/a">' if url is None else "ok"
+        with mock.patch.object(radar, "known", return_value=set()), mock.patch.dict(radar.METHODS, {"page": fetch}):
+            self.assertEqual(len(radar.pull(self.SRC, "page", 5)), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

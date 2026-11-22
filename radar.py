@@ -101,7 +101,14 @@ def pull(src, method, pages, cap=None):
     """Listing pages until a short page (lists) or a page with no new detail link (pages); then the new detail pages."""
     rows, first, seen = [], int(src["first"]), set()
     for page in range(first, first + pages):
-        items, envelope = split(src, method, METHODS[method](src, page), page)
+        try:
+            text = METHODS[method](src, page)
+        except Exception as e:
+            if not rows:
+                raise
+            print(src["source"], method, page, "stop:", e, file=sys.stderr)
+            break  # the listing ended (404 past the last page): keep the pages already read
+        items, envelope = split(src, method, text, page)
         print(src["source"], method, page, len(items), flush=True)
         rows += [(src["source"], method, page, i, body, envelope if n == 0 else None) for n, (i, body) in enumerate(items)]
         new = set().union(*(links(src, method, b) for _, b in items)) - seen
