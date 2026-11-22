@@ -17,3 +17,9 @@ for url in sys.argv[1:]:
         print("SHAPES", shapes.most_common(15))
         print("PAGINATION", sorted({h for h in hrefs if re.search(r"(?i)page=|/page/|[?&]p=", h)})[:5])
         print("TITLE", re.findall(r"<title>(.*?)</title>", t, re.S)[:1], "H1", re.findall(r"<h1[^>]*>(.*?)</h1>", t, re.S)[:1])
+        m = re.search(r'__NEXT_DATA__[^>]*>(.*?)</script>', t, re.S)
+        if m:
+            print("NEXTDATA", m.group(1)[:2500])
+        print("CLASSES", sorted(set(re.findall(r'class="([^"]*(?:descr|salar|title|job|offer)[^"]*)"', t)))[:25])
+        text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", re.sub(r"(?s)<(script|style).*?</\1>", "", t)))
+        print("TEXT", text[:1200])
