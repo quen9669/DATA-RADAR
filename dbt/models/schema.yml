@@ -4,6 +4,9 @@ models:
       - {name: offer_id, data_tests: [unique, not_null]}
       - {name: status, data_tests: [{accepted_values: {arguments: {values: [active, close]}}}]}
       - {name: salary_origin, data_tests: [{accepted_values: {arguments: {values: [employeur]}}}]}
+  - name: salaries
+    columns:
+      - {name: offer_id, data_tests: [not_null]}
   - name: salary_text
     columns:
       - {name: offer_id, data_tests: [not_null]}
