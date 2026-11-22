@@ -9,7 +9,7 @@ select
     json_extract_string(j, '$.locationMap.LU[0]') as city,
     cast(to_timestamp(try_cast(json_extract(j, '$.creationDate') as bigint) / 1000) as date) as published_on,
     json_extract_string(j, '$.description') as description,
-    null as url,
+    'https://europa.eu/eures/portal/jv-se/jv-details/' || item_id || '?lang=fr' as url,
     first_seen,
     last_seen
 from jv

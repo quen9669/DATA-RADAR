@@ -109,3 +109,12 @@ jobs:
         run: |
           dbt build --profiles-dir .
           for m in source_ranking health salary_check check_cases; do dbt show --profiles-dir . -s $m --limit 40 $( [ $m = check_cases ] && echo --output json) | tee -a "$GITHUB_STEP_SUMMARY"; done
+  examples:
+    if: inputs.task == 'examples'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install dbt-duckdb==1.11.1 pandas
+      - working-directory: dbt
+        run: dbt seed --profiles-dir . && dbt run --profiles-dir . -s +postings +salaries
+      - run: python examples.py

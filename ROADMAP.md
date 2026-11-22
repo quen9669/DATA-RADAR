@@ -41,6 +41,8 @@ Volumes tirés d'une analyse externe, non vérifiés : à mesurer au premier run
 Pour chaque source : 5 cas dans `checks.md`, un test, `dbt build` vert avant commit.
 
 ## Plus tard (4b)
+Champs à extraire en silver (demande du 22 nov.) : compétences, outils, langues, type de contrat, expérience demandée.
+
 LinkedIn (proxies ou Apify payant), jobs.ch, jobup.ch, grands employeurs (ATS), ICTjob, Nexten, Paperjam, eFinancialCareers, BEI, NSPA, LIST (30 minutes d'inspection réseau avant de coder), Optioncarriere.lu.
 
 ## Écartées

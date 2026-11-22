@@ -1,4 +1,4 @@
--- jobs.lu (LU): the detail page is plain HTML; the "Payment" line is kept in the description so that salary.py reads it. HTML entities stay as in the raw page.
+-- jobs.lu (LU): the detail page is plain HTML; the "Payment" line is kept in the description so that salary.py reads it.
 with page as (
     select item_id, first_seen, last_seen, coalesce(json_extract_string(try_cast(body as json), '$.data.rawHtml'), body) as html
     from {{ raw('jobs_lu') }} where item_id like '%ApplyForJob.aspx?Id=%'

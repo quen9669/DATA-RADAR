@@ -1,14 +1,17 @@
 -- Offers collected since phase 3, one row per posting across sources.
-select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_job_room') }}
-union all by name
-select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_eures') }}
-union all by name
-select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_adem') }}
-union all by name
-select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_jobposting') }}
-union all by name
-select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_indeed_lu') }}
-union all by name
-select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_jobs_lu') }}
-union all by name
-select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_jobfinder') }}
+with u as (
+    select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_job_room') }}
+    union all by name
+    select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_eures') }}
+    union all by name
+    select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_adem') }}
+    union all by name
+    select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_jobposting') }}
+    union all by name
+    select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_indeed_lu') }}
+    union all by name
+    select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_jobs_lu') }}
+    union all by name
+    select source_id || ':' || source_item_id as offer_id, * from {{ ref('stg_jobfinder') }}
+), n as (select * replace ({{ unesc_num('title') }} as title, {{ unesc_num('company') }} as company, {{ unesc_num('city') }} as city, {{ unesc_num('description') }} as description) from u)
+select * replace ({{ unesc_name('title') }} as title, {{ unesc_name('company') }} as company, {{ unesc_name('city') }} as city, {{ unesc_name('description') }} as description) from n

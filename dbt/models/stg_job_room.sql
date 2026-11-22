@@ -9,7 +9,7 @@ select
     json_extract_string(j, '$.jobAdvertisement.jobContent.location.city') as city,
     try_cast(json_extract_string(j, '$.jobAdvertisement.publication.startDate') as date) as published_on,
     json_extract_string(j, '$.jobAdvertisement.jobContent.jobDescriptions[0].description') as description,
-    json_extract_string(j, '$.jobAdvertisement.jobContent.externalUrl') as url,
+    'https://www.job-room.ch/job-search/' || item_id as url,
     first_seen,
     last_seen
 from ad

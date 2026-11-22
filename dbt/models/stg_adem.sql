@@ -13,7 +13,7 @@ select
     'LU' as country,
     json_extract_string(j, '$.commune') as city,
     try_cast(json_extract_string(j, '$.publicationDate') as date) as published_on,
-    regexp_replace(substr(html, instr(html, 'jobboard-offer-main')), '<[^>]+>', ' ', 'g') as description,
+    regexp_replace(regexp_replace(substr(html, instr(html, 'jobboard-offer-main')), '^jobboard-offer-main[^>]*>', ''), '<[^>]+>', ' ', 'g') as description,
     item_id as url,
     first_seen,
     last_seen
