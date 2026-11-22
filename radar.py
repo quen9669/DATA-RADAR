@@ -1,5 +1,7 @@
 """Collect: one function per method, shared by every source. Raw items go to Parquet on R2, parsing is dbt's job."""
 import csv, datetime, json, os, re, subprocess, sys, urllib.request
+from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urljoin
 
 from salary import parse
 
@@ -29,30 +31,66 @@ def api(src, page, url=None):
     return http(fill(src["url"], page), body)
 
 
+def page(src, page, url=None):
+    return http(url or fill(src["url"], page))
+
+
 def firecrawl(src, page, url=None):
     key = {"Authorization": "Bearer " + os.environ["FIRECRAWL_API_KEY"]}
-    return http("https://api.firecrawl.dev/v1/scrape", {"url": url or fill(src["fallback_url"], page), "formats": ["rawHtml"], "waitFor": 8000}, key)
+    return http("https://api.firecrawl.dev/v1/scrape", {"url": url or fill(src["fallback_url"] or src["url"], page), "formats": ["rawHtml"], "waitFor": 8000}, key)
 
 
-METHODS = {"api": api, "firecrawl": firecrawl}
+def jobspy(src, page, url=None):
+    """JobSpy scrape of every search term of the source, de-duplicated: one JSON list. src["body"]["jobspy"] holds its arguments."""
+    from jobspy import scrape_jobs
+    args = json.loads(src["body"])["jobspy"]
+    jobs = {}
+    for term in args.pop("search_terms"):
+        jobs |= {j["id"]: j for j in json.loads(scrape_jobs(search_term=term, **args).to_json(orient="records", date_format="iso"))}
+    return json.dumps(list(jobs.values()), ensure_ascii=False)
 
 
-def split(src, method, text):
-    """(items, envelope): api pages hold a list of items, any other method keeps the page whole."""
-    if method != "api":
-        return [(src["fallback_url"], text)] * bool(text.strip()), None
+def apify(src, page, url=None):
+    """Run an Apify actor and return its dataset (a JSON list). src["fallback_url"] is the actor endpoint, src["body"]["apify"] its input."""
+    return http(src["fallback_url"], json.loads(src["body"])["apify"], {"Authorization": "Bearer " + os.environ["APIFY_TOKEN"]})
+
+
+METHODS = {"api": api, "page": page, "firecrawl": firecrawl, "jobspy": jobspy, "apify": apify}
+LISTS = ("api", "jobspy", "apify")  # methods whose answer is a list of items
+
+
+NOISE = re.compile(r"(?s)<svg\b.*?</svg>|<style\b.*?</style>|<script\b(?![^>]*(?:ld\+json|__NEXT_DATA__)).*?</script>")  # page code, not content
+
+
+def split(src, method, text, page=0):
+    """(items, envelope): list methods hold many items, any other method keeps the page whole."""
+    if method not in LISTS:
+        return [(fill(src["url"] if method == "page" else src["fallback_url"] or src["url"], page), NOISE.sub("", text))] * bool(text.strip()), None
     doc = json.loads(text)
     items = at(doc, src["items"])
     envelope = text if isinstance(doc, list) else json.dumps({**doc, src["items"]: []})
     return [(str(at(i, src["id"])), json.dumps(i, ensure_ascii=False)) for i in items], envelope
 
 
-def follow(src, method, rows):
-    """Detail pages linked from a listing (src["follow"] is a regex), only those not stored yet."""
-    if not src.get("follow") or method == "api":
-        return []
-    urls = {u for r in rows for u in re.findall(src["follow"], r[4])} - known(src["source"])
-    return [(src["source"], method, 0, u, METHODS[method](src, 0, u), None) for u in sorted(urls)]
+def links(src, method, text):
+    """Detail page links of a listing page (src["follow"] is a regex matching the href), made absolute."""
+    if not src.get("follow") or method in LISTS:
+        return set()
+    return {urljoin(fill(src.get("url", ""), 0), u) for u in re.findall(src["follow"], text)}
+
+
+def follow(src, method, rows, cap=None):
+    """Detail pages linked from the listings, only those not stored yet; one that fails is retried at the next run."""
+    urls = sorted(set().union(*(links(src, method, r[4]) for r in rows)) - known(src["source"]))[:cap]
+
+    def get(u):
+        try:
+            return (src["source"], method, 0, u, METHODS[method](src, 0, u), None)
+        except Exception as e:
+            print(u, e, file=sys.stderr)
+
+    with ThreadPoolExecutor(8) as pool:
+        return [r for r in pool.map(get, urls) if r]
 
 
 def known(source):
@@ -62,15 +100,25 @@ def known(source):
         return set()
 
 
-def pull(src, method, pages):
-    rows, first = [], int(src["first"])
+def pull(src, method, pages, cap=None):
+    """Listing pages until a short page (lists) or a page with no new detail link (pages); then the new detail pages."""
+    rows, first, seen = [], int(src["first"]), set()
     for page in range(first, first + pages):
-        items, envelope = split(src, method, METHODS[method](src, page))
+        try:
+            text = METHODS[method](src, page)
+        except Exception as e:
+            if not rows:
+                raise
+            print(src["source"], method, page, "stop:", e, file=sys.stderr)
+            break  # the listing ended (404 past the last page): keep the pages already read
+        items, envelope = split(src, method, text, page)
         print(src["source"], method, page, len(items), flush=True)
         rows += [(src["source"], method, page, i, body, envelope if n == 0 else None) for n, (i, body) in enumerate(items)]
-        if len(items) < int(src["size"]) or method != "api":
+        new = set().union(*(links(src, method, b) for _, b in items)) - seen
+        seen |= new
+        if (len(items) < int(src["size"])) if method in LISTS else not new:
             break
-    return rows + follow(src, method, rows)
+    return rows + follow(src, method, rows, cap)
 
 
 def collect(src, pages):
@@ -127,7 +175,7 @@ def check():
         ok = False
         for method in src["methods"].split():
             try:
-                rows = pull(src, method, 1)
+                rows = pull(src, method, 1, cap=5)
                 pct = sum(bool((p := parse(r[4])) and not p["excluded"]) for r in rows) * 100 // max(len(rows), 1)
                 print(f"| {src['source']} | {method} | OK | {len(rows)} | {pct}% |")
                 ok = ok or bool(rows)

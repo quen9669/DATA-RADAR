@@ -6,10 +6,10 @@ select
     json_extract_string(j, '$.title') as title,
     json_extract_string(j, '$.employer.name') as company,
     'LU' as country,
-    json_extract_string(j, '$.locationMap.LU[0]') as city,
+    coalesce(json_extract_string(j, '$.locationMap.LU[0]'), 'Luxembourg') as city,
     cast(to_timestamp(try_cast(json_extract(j, '$.creationDate') as bigint) / 1000) as date) as published_on,
     json_extract_string(j, '$.description') as description,
-    null as url,
+    'https://europa.eu/eures/portal/jv-se/jv-details/' || item_id || '?lang=fr' as url,
     first_seen,
     last_seen
 from jv

@@ -28,6 +28,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET }}
   AWS_DEFAULT_REGION: auto
   FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+  APIFY_TOKEN: ${{ secrets.APIFY_TOKEN }}
 jobs:
   lines:
     runs-on: ubuntu-latest
@@ -51,7 +52,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install duckdb==2.0.1
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install duckdb==2.0.1 python-jobspy
       - run: python radar.py ${{ inputs.source }} | tee -a "$GITHUB_STEP_SUMMARY"
         shell: bash
   check:
@@ -59,7 +62,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: pip install duckdb==2.0.1
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install duckdb==2.0.1 python-jobspy
       - run: python radar.py check | tee -a "$GITHUB_STEP_SUMMARY"
         shell: bash
   compact:
