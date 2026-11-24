@@ -1,5 +1,5 @@
 -- Every `page` source that publishes the schema.org JobPosting (JSON-LD) of a detail page, read from the raw page or from Firecrawl's rawHtml. Salary is structured.
-{% set sources = ['govjobs', 'moovijob'] %}
+{% set sources = ['govjobs', 'moovijob', 'luxsearch'] %}
 with page as (
     {% for s in sources %}select '{{ s }}' as source_id, * from {{ raw(s) }}{{ ' union all ' if not loop.last }}{% endfor %}
 ), h as (

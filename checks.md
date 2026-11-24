@@ -45,5 +45,5 @@ Les colonnes « Observé » ci-dessus datent du build avant correctif. Corrigés
 ## À décider par FRANKS
 - Les cas 2, 3, 4 d'ADEM faute de données : accepter « 0 salaire sur ADEM » comme cas validé, ou attendre une offre avec salaire ?
 
-## Phase 4a (govjobs, jobs_lu, moovijob, jobfinder, indeed_lu) : cas à remplir après le premier run
+## Phase 4a (govjobs, jobs_lu, moovijob, luxsearch, jobfinder, indeed_lu) : cas à remplir après le premier run
 Mêmes 5 cas par source. Les candidats viendront de `check_cases` une fois les données collectées ; tant que les URL de liste et les motifs de liens de `sources.csv` ne sont pas confirmés par `python radar.py check`, aucune offre n'est validée. Cas 1 (salaire structuré) : `baseSalary` JSON-LD pour les 4 sites `page`, champs `min_amount`/`max_amount` pour indeed_lu.
