@@ -21,4 +21,4 @@ models:
     columns:
       - {name: offer_id, data_tests: [unique, not_null]}
       - {name: title, data_tests: [not_null]}
-      - {name: source_id, data_tests: [{accepted_values: {arguments: {values: [job_room, eures, adem, govjobs, jobs_lu, moovijob, jobfinder, indeed_lu]}}}]}
+      - {name: source_id, data_tests: [{accepted_values: {arguments: {values: [job_room, eures, adem, govjobs, jobs_lu, moovijob, luxsearch, jobfinder, indeed_lu]}}}]}

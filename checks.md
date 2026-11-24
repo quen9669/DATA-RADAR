@@ -45,5 +45,16 @@ Les colonnes « Observé » ci-dessus datent du build avant correctif. Corrigés
 ## À décider par FRANKS
 - Les cas 2, 3, 4 d'ADEM faute de données : accepter « 0 salaire sur ADEM » comme cas validé, ou attendre une offre avec salaire ?
 
-## Phase 4a (govjobs, jobs_lu, moovijob, jobfinder, indeed_lu) : cas à remplir après le premier run
+## Phase 4a (govjobs, jobs_lu, moovijob, luxsearch, jobfinder, indeed_lu) : cas à remplir après le premier run
 Mêmes 5 cas par source. Les candidats viendront de `check_cases` une fois les données collectées ; tant que les URL de liste et les motifs de liens de `sources.csv` ne sont pas confirmés par `python radar.py check`, aucune offre n'est validée. Cas 1 (salaire structuré) : `baseSalary` JSON-LD pour les 4 sites `page`, champs `min_amount`/`max_amount` pour indeed_lu.
+
+## luxsearch (Luxembourg, cabinet de recrutement)
+Collecte du 24 nov. 2026 : 65 pages brutes (sitemap, 29 offres, 35 pages « métier » sans JobPosting). Les 29 offres ont `baseSalary` (EUR, par an, min et max), date, ville ; entreprise toujours « luxsearch® » (employeur anonyme). Page de contrôle validée par FRANKS : à venir.
+
+| Cas | Offre | Attendu | Observé |
+|---|---|---|---|
+| 1 | `/fr/jobs/comptable-general` Comptable général | champ structuré 60 000 à 90 000 € / an | 60 000 à 90 000 € (OK, concorde avec le texte) |
+| 2 | `/fr/jobs/ai-manager-interner-ki-leiter` Responsable IA & automatisation | texte « Salaire entre 80.000 et 120.000 EUR » = champ structuré | 80 000 à 120 000 € (OK) |
+| 3 | sans objet | pas de mensuel, de 13e mois ni de temps partiel dans les montants | — (le 13e mois est cité à part, à vérifier avec le recruteur) |
+| 4 | sans objet | toutes les offres sont des CDI temps plein, aucune mission freelance | — |
+| 5 | `/fr/jobs/projektingenieur-energie` Ingénieur énergie (publiée le 5 mai 2026) | aucune offre sans salaire ; retrait non détectable (pas de `validThrough`) | retrait non détecté |
